@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static it.unipr.soi23.game_web_server.utils.Soi23GameWebServerConst.*;
+import static java.lang.Math.abs;
 
 @Service
 public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService {
@@ -75,9 +76,12 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
         Then, start the game if it can, or reset its ballAnimation to BALL_LOBBY_ANIMATION.
         Finally return the new GameData
          */
+
         GameData gameData = retrieveGameData(gameId);
         String playerId = request.getPlayerId();
         Player player = retrievePlayer(gameData, playerId);
+        if (player.isReadyToStart() && gameData.isPlaying())
+            return new GameDataDTO().teamsScore(gameData.getTeamsScore()).ballAnimation(gameData.getBallAnimation());
         player.setReadyToStart(true);
         messageSendingOperations.convertAndSend( //
                 TOPIC_GAME_PREFIX + gameId + TOPIC_GAME_PLAYERS_SUFFIX, //
@@ -107,6 +111,9 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
         GameData gameData = retrieveGameData(gameId);
         String playerId = request.getPlayerId();
         Player player = retrievePlayer(gameData, playerId);
+        if (request.getY()>PLAYFIELD_HEIGHT-PLAYER_HEIGHT/2 || request.getY()<PLAYER_HEIGHT/2 || !gameData.isPlaying()
+                || !player.isReadyToStart() ||  abs(player.getY()-request.getY())>PLAYER_SPEED)
+            return new PlayerDTO().fromPlayer(player);
         player.setY(request.getY());
         return new PlayerDTO().fromPlayer(player);
     }
@@ -114,9 +121,13 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
     @Override
     public BallAnimation animationEnd(String gameId) {
         final GameData gameData = retrieveGameData(gameId);
-        final GameDataBroker.UpdateAnimationResult updateAnimationResult = new GameDataBroker() //
-                .gameData(gameData) //
-                .updateAnimation();
+        final GameDataBroker.UpdateAnimationResult updateAnimationResult;
+        // Non so se sia corretto ma sistema il problema del doppio punteggio
+        synchronized (gameData) {
+            updateAnimationResult = new GameDataBroker() //
+                    .gameData(gameData) //
+                    .updateAnimation();
+        }
 
         /* TODO
         If updateAnimation result is SCORE or NEXT, return the new ballAnimation.
