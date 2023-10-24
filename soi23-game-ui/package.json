@@ -1,7 +1,7 @@
 {
   "name": "soi23-game-ui",
-  "version": "0.0.0",
-  "license": "MIT",
+  "version": "1.0.0-alpha",
+  "license": "UNLICENSED",
   "scripts": {
     "start": "nx serve",
     "build": "nx build",
@@ -16,6 +16,7 @@
     "@stomp/stompjs": "7.0.0",
     "@swc/helpers": "~0.5.0",
     "@types/sockjs-client": "1.5.1",
+    "notistack": "3.0.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "sockjs-client": "1.6.1",

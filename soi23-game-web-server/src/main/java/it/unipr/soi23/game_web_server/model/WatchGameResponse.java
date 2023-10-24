@@ -6,6 +6,7 @@ import java.util.List;
 public class WatchGameResponse extends GameDataDTO {
 
     private List<PlayerDTO> players;
+    private Message message;
 
     public WatchGameResponse() {
         this.players = new ArrayList<>();
@@ -34,5 +35,18 @@ public class WatchGameResponse extends GameDataDTO {
     public void addPlayer(Player player) {
         final PlayerDTO playerDTO = new PlayerDTO().fromPlayer(player);
         this.players.add(playerDTO);
+    }
+
+    public Message getMessage() {
+        return message;
+    }
+
+    public void setMessage(Message message) {
+        this.message = message;
+    }
+
+    public WatchGameResponse message(Message message) {
+        setMessage(message);
+        return this;
     }
 }

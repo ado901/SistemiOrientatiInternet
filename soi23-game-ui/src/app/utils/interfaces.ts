@@ -40,6 +40,17 @@ export interface TeamsScore {
     rightTeamScore: number,
 }
 
+export enum MessageType {
+    ERROR,
+    WARNING,
+    INFO,
+}
+
+export interface Message {
+    type: MessageType,
+    code: string,
+}
+
 export interface GameMessage {
     teamsScore: TeamsScore,
     ballAnimation: BallAnimation,
@@ -47,8 +58,9 @@ export interface GameMessage {
 
 export interface WatchMessage extends Partial<GameMessage> {
     players: PlayerDTO[],
+    message?: Message,
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface RegisterMessage extends WatchMessage {
+    token?: string,
 }

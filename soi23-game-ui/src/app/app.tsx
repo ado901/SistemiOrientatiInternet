@@ -1,3 +1,4 @@
+import { SnackbarProvider } from 'notistack'
 import '@fontsource/public-sans'
 import {
     CssVarsProvider,
@@ -11,23 +12,25 @@ import PlayField from './PlayField'
 export default function App() {
     return (
         <StompProvider>
-            <CssVarsProvider theme={theme}>
-                <Stack
-                    spacing={2}
-                    alignItems='center'
-                    justifyContent='center'
-                >
-                    <Typography
-                        noWrap
-                        level='display1'
-                        variant='soft'
-                        color='primary'
+            <SnackbarProvider preventDuplicate>
+                <CssVarsProvider theme={theme}>
+                    <Stack
+                        spacing={2}
+                        alignItems='center'
+                        justifyContent='center'
                     >
-                        SOI Game
-                    </Typography>
-                    <PlayField />
-                </Stack>
-            </CssVarsProvider>
+                        <Typography
+                            noWrap
+                            level='display1'
+                            variant='soft'
+                            color='primary'
+                        >
+                            SOI Game
+                        </Typography>
+                        <PlayField />
+                    </Stack>
+                </CssVarsProvider>
+            </SnackbarProvider>
         </StompProvider>
     )
 }

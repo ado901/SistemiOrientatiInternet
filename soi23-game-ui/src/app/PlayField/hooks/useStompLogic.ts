@@ -3,6 +3,7 @@ import useStompClient from '../../stomp/StompClient/hooks/useStompClient'
 import {
     BallAnimation,
     GameMessage,
+    Message,
     PlayerDTO,
     RegisterMessage,
     TeamsScore,
@@ -29,15 +30,21 @@ const getDestination = ({
 export default function useStompLogic({
     gameId,
     playerId,
+    playerToken,
+    onTokenChange,
     onTeamsScoreChange,
     onBallAnimationChange,
     onPlayerDTOChange,
+    onMessageChange,
 }: {
     gameId: string,
     playerId: string,
+    playerToken: string,
+    onTokenChange(token: string): void,
     onTeamsScoreChange(teamsScore: TeamsScore): void,
     onBallAnimationChange(ballAnimation: BallAnimation): void,
     onPlayerDTOChange(player: PlayerDTO): void,
+    onMessageChange(message: Message): void,
 }) {
     // WATCH
 
@@ -53,8 +60,11 @@ export default function useStompLogic({
         if (watchMessage.ballAnimation) {
             onBallAnimationChange(watchMessage.ballAnimation)
         }
+        if (watchMessage.message) {
+            onMessageChange(watchMessage.message)
+        }
         watchMessage.players.forEach(onPlayerDTOChange)
-    }, [onTeamsScoreChange, onBallAnimationChange, onPlayerDTOChange])
+    }, [onTeamsScoreChange, onBallAnimationChange, onMessageChange, onPlayerDTOChange])
 
     useStompClient({
         destination: watchDestination,
@@ -75,8 +85,14 @@ export default function useStompLogic({
         if (registerMessage.ballAnimation) {
             onBallAnimationChange(registerMessage.ballAnimation)
         }
+        if (registerMessage.token) {
+            onTokenChange(registerMessage.token)
+        }
+        if (registerMessage.message) {
+            onMessageChange(registerMessage.message)
+        }
         registerMessage.players.forEach(onPlayerDTOChange)
-    }, [onTeamsScoreChange, onBallAnimationChange, onPlayerDTOChange])
+    }, [onTokenChange, onTeamsScoreChange, onBallAnimationChange, onMessageChange, onPlayerDTOChange])
 
     useStompClient({
         destination: registerDestination,
@@ -130,6 +146,25 @@ export default function useStompLogic({
     useStompClient({
         destination: playersTopicDestination,
         onMessage: handlePlayersTopicMessage
+    })
+
+    // MESSAGE TOPIC
+
+    const messageTopicDestination = useMemo(() => (
+        playerToken && getDestination({ gameId, prefix: TOPIC_PREFIX, suffix: `.messages.${playerToken}` })
+    ), [gameId, playerToken])
+
+    /* TODO
+    Handle Message topic messages
+    */
+    const handleMessageTopicMessage = useCallback(({ body }: { body: string }) => {
+        const message: Message = JSON.parse(body)
+        onMessageChange(message)
+    }, [onMessageChange])
+
+    useStompClient({
+        destination: messageTopicDestination,
+        onMessage: handleMessageTopicMessage
     })
 
     // SEND START

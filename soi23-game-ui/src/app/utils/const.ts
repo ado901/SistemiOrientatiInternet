@@ -25,7 +25,6 @@ export const PLAYER_STEP = Math.floor(PLAYER_SPEED / FPS)
 export const LEFT_TEAM_X = Math.floor(PLAYFIELD_WIDTH / 20)
 export const RIGHT_TEAM_X = Math.floor(PLAYFIELD_WIDTH - LEFT_TEAM_X)
 
-
 // PLAYFIELD STYLE
 
 export const PLAYFIELD_SVG_VIEWBOX = `0 0 ${PLAYFIELD_WIDTH} ${PLAYFIELD_HEIGHT}`
@@ -44,14 +43,12 @@ export const PLAYFIELD_TEXT_STYLE: CSSProperties = Object.freeze({
     left: '50%',
 })
 
-
 // BALL STYLE
 
 export const BALL_BASE_SVG_PROPS: React.SVGProps<SVGCircleElement> = Object.freeze({
     fill: '#FF2C07',
     r: BALL_RADIUS,
 })
-
 
 // PLAYER STYLE
 

@@ -20,6 +20,7 @@ import {
 import Arena from '../../utils/Arena'
 import useSubmit from './useSubmit'
 import useStompLogic from './useStompLogic'
+import useMessageHandler from './useMessageHandler'
 
 interface BallProps extends React.SVGProps<SVGCircleElement> {
     style: React.CSSProperties,
@@ -28,6 +29,7 @@ interface BallProps extends React.SVGProps<SVGCircleElement> {
 export default function usePlayField() {
     const [pendingGameId, setPendingGameId] = useState<string>('')
     const [pendingPlayerId, setPendingPlayerId] = useState<string>('')
+    const [token, setToken] = useState<string>('')
     const [teamsScore, setTeamsScore] = useState<TeamsScore | null>(null)
     const [ballAnimation, setBallAnimation] = useState<BallAnimation | null>(null)
     const [playerDTOMap, setPlayerDTOMap] = useState<PlayerDTOMap>({})
@@ -61,7 +63,7 @@ export default function usePlayField() {
     } = useSubmit({
         pendingGameId,
         pendingPlayerId,
-        disableEdit: !!teamsScore,
+        disableEdit: !!token,
     })
 
     const handleBallAnimationChange = useCallback((ballAnim: BallAnimation) => {
@@ -83,11 +85,14 @@ export default function usePlayField() {
         /* TODO
         Set the new value of playerDTOMap
         */
-       setPlayerDTOMap((oldPlayerDTOMap) => ({
+        setPlayerDTOMap((oldPlayerDTOMap) => ({
             ...oldPlayerDTOMap,
             [playerDTO.id]: playerDTO,
-       }))
+        }))
     }, [playerId])
+    const {
+        handleMessageChange
+    } = useMessageHandler()
 
     const {
         sendStart,
@@ -96,9 +101,12 @@ export default function usePlayField() {
     } = useStompLogic({
         gameId,
         playerId,
+        playerToken: token,
+        onTokenChange: setToken,
         onTeamsScoreChange: setTeamsScore,
         onBallAnimationChange: handleBallAnimationChange,
         onPlayerDTOChange: handlePlayerDTOChange,
+        onMessageChange: handleMessageChange,
     })
 
     const handleKeyDown = useCallback(({ key }: KeyboardEvent) => {
@@ -107,20 +115,18 @@ export default function usePlayField() {
             - set the moving direction of the player
             - request the start of the game
         */
-       const player=arenaRef.current.getPlayer()
-       switch (key) {
-        case 'w':
-            player?.setDirection(PlayerDirection.Up)
-            break
-        case 's':
-            player?.setDirection(PlayerDirection.Down)
-            break
-        case ' ':
-            sendStart(JSON.stringify({"playerId": playerId}))
-            break
-       }
-       
-    }, [sendStart, playerId])
+        switch (key) {
+            case 'w':
+                arenaRef.current.getPlayer()?.setDirection(PlayerDirection.Up)
+                break
+            case 's':
+                arenaRef.current.getPlayer()?.setDirection(PlayerDirection.Down)
+                break
+            case 'Enter':
+                sendStart(JSON.stringify({playerId,token}))
+                break
+        }
+    }, [sendStart, playerId, token])
 
     const handleKeyUp = useCallback(({ key }: KeyboardEvent) => {
         /* TODO
@@ -129,20 +135,18 @@ export default function usePlayField() {
         Be aware that the user could have already pressed the key
         corresponding to the opposite player direction
         */
-        const player=arenaRef.current.getPlayer()
         switch (key) {
             case 'w':
-                if (player?.getDirection() === PlayerDirection.Up) {
-                    player?.setDirection(PlayerDirection.Hold)
+                if (arenaRef.current.getPlayer()?.getDirection() === PlayerDirection.Up) {
+                    arenaRef.current.getPlayer()?.setDirection(PlayerDirection.Hold)
                 }
                 break
             case 's':
-                if (player?.getDirection() === PlayerDirection.Down) {
-                    player?.setDirection(PlayerDirection.Hold)
+                if (arenaRef.current.getPlayer()?.getDirection() === PlayerDirection.Down) {
+                    arenaRef.current.getPlayer()?.setDirection(PlayerDirection.Hold)
                 }
                 break
         }
-       
     }, [])
 
     const handleAnimationEnd = useCallback(() => {
@@ -156,8 +160,8 @@ export default function usePlayField() {
         /* TODO
         Notify the backend the new player position
         */
-        sendPosition(JSON.stringify({"playerId": playerId, "y": playerPositionY}))
-    }, [sendPosition, playerId])
+        sendPosition(JSON.stringify({playerId, 'y': playerPositionY,token}))
+    }, [sendPosition, playerId, token])
 
     const handleGameIdChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
         setPendingGameId(event.target.value)
@@ -174,7 +178,7 @@ export default function usePlayField() {
     return {
         gameId: pendingGameId,
         playerId: pendingPlayerId,
-        disableEdit: !!teamsScore,
+        disableEdit: !!token,
         teamsScore,
         playerDTOMap,
         ballProps,

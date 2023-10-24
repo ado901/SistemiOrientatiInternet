@@ -21,9 +21,11 @@ public class Player implements Serializable {
     }
 
     private String id;
+    private String token;
     private Team team;
     private int y;
     private boolean readyToStart;
+    private long lastMovementTimestamp;
 
     public String getId() {
         return id;
@@ -35,6 +37,19 @@ public class Player implements Serializable {
 
     public Player id(String id) {
         setId(id);
+        return this;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public Player token(String token) {
+        setToken(token);
         return this;
     }
 
@@ -74,6 +89,19 @@ public class Player implements Serializable {
 
     public Player readyToStart(boolean readyToStart) {
         setReadyToStart(readyToStart);
+        return this;
+    }
+
+    public long getLastMovementTimestamp() {
+        return lastMovementTimestamp;
+    }
+
+    public void setLastMovementTimestamp(long lastMovementTimestamp) {
+        this.lastMovementTimestamp = lastMovementTimestamp;
+    }
+
+    public Player lastMovementTimestamp(long lastMovementTimestamp) {
+        setLastMovementTimestamp(lastMovementTimestamp);
         return this;
     }
 }

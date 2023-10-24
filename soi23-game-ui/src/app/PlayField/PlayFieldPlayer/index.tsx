@@ -1,4 +1,5 @@
-import { CSSProperties, useMemo } from 'react'
+import { CSSProperties, useEffect, useMemo } from 'react'
+import { enqueueSnackbar } from 'notistack'
 import { Typography } from '@mui/joy'
 import {
     LEFT_TEAM_X,
@@ -72,6 +73,12 @@ export default function PlayFieldPlayer({
             ...sideStyle,
         }
     }, [team])
+
+    useEffect(() => {
+        if (isUser && !readyToStart) {
+            enqueueSnackbar('Press Enter to start', { variant: 'info' })
+        }
+    }, [isUser, readyToStart])
 
     return (
         <g>
