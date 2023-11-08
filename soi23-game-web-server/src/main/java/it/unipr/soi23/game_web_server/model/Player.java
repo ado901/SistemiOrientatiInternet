@@ -1,10 +1,14 @@
 package it.unipr.soi23.game_web_server.model;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.redis.core.index.Indexed;
 
 import java.io.Serial;
 import java.io.Serializable;
 
+@RedisHash("Player")
 public class Player implements Serializable {
 
     @Serial
@@ -20,7 +24,10 @@ public class Player implements Serializable {
         }
     }
 
+    @Id
     private String id;
+    @Indexed
+    private String gameId;
     private String token;
     private Team team;
     private int y;
@@ -37,6 +44,19 @@ public class Player implements Serializable {
 
     public Player id(String id) {
         setId(id);
+        return this;
+    }
+
+    public String getGameId() {
+        return gameId;
+    }
+
+    public void setGameId(String gameId) {
+        this.gameId = gameId;
+    }
+
+    public Player gameId(String gameId) {
+        setGameId(gameId);
         return this;
     }
 

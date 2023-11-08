@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>it.unipr.soi23</groupId>
 	<artifactId>soi23-game-web-server</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0-SNAPSHOT</version>
 	<name>soi23-game-web-server</name>
 	<description>SOI 2023/2024 Web Server</description>
 	<properties>
@@ -20,6 +20,14 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
 		</dependency>
 
 		<dependency>

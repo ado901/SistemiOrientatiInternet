@@ -3,53 +3,54 @@ package it.unipr.soi23.game_web_server.service.impl;
 import it.unipr.soi23.game_web_server.broker.GameDataBroker;
 import it.unipr.soi23.game_web_server.broker.PlayerBroker;
 import it.unipr.soi23.game_web_server.model.*;
+import it.unipr.soi23.game_web_server.repo.PersistenceRepo;
 import it.unipr.soi23.game_web_server.service.Soi23GameWebServerService;
 import org.springframework.messaging.core.MessageSendingOperations;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import static it.unipr.soi23.game_web_server.utils.Soi23GameWebServerConst.*;
-import static java.lang.Math.abs;
 
 @Service
 public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService {
 
     private final MessageSendingOperations<String> messageSendingOperations;
+    private final PersistenceRepo persistenceRepo;
 
-    private final Map<String, GameData> gameDataMap;
-
-    public Soi23GameWebServerServiceImpl(MessageSendingOperations<String> messageSendingOperations) {
+    public Soi23GameWebServerServiceImpl( //
+                                          MessageSendingOperations<String> messageSendingOperations, //
+                                          PersistenceRepo persistenceRepo //
+    ) {
         this.messageSendingOperations = messageSendingOperations;
-        this.gameDataMap = new HashMap<>();
+        this.persistenceRepo = persistenceRepo;
     }
 
     @Override
     public WatchGameResponse watchGame(String gameId) {
-        final GameData gameData = gameDataMap.getOrDefault(gameId, null);
+        final GameData gameData = persistenceRepo.findGameData().findById(gameId).orElse(null);
         if (gameData == null) {
             return new WatchGameResponse().message(new Message() //
                     .type(Message.Type.ERROR) //
                     .code(Message.Code.GAME_NOT_FOUND));
         }
+        final Iterable<Player> players = persistenceRepo.findPlayer().findAllByGameId(gameId);
 
         final WatchGameResponse response = new WatchGameResponse() //
                 .teamsScore(gameData.getTeamsScore()) //
                 .ballAnimation(gameData.getBallAnimation());
-        gameData.getPlayers().forEach(response::addPlayer);
+        players.forEach(response::addPlayer);
 
         return response;
     }
 
     @Override
     public RegisterResponse register(String gameId, String playerId) {
-        final GameData gameDataRead = gameDataMap.getOrDefault(gameId, null);
+        final GameData gameDataRead = persistenceRepo.findGameData().findById(gameId).orElse(null);
         final boolean gameDataFound = gameDataRead != null;
         final GameData gameData = gameDataFound ? gameDataRead : new GameData(gameId);
 
-        final Player player = createPlayer(gameData, playerId);
+        final Player player = createPlayer(gameId, playerId);
         if (player == null) {
             return new RegisterResponse().message(new Message() //
                     .type(Message.Type.ERROR) //
@@ -59,47 +60,52 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
         if (gameData.isPlaying()) {
             player.setReadyToStart(true);
         }
-        gameData.getPlayers().add(player);
+        persistenceRepo.insertPlayer().player(player).apply();
         if (!gameDataFound) {
-            gameDataMap.put(gameId, gameData);
+            persistenceRepo.insertGameData().gameData(gameData).apply();
         }
 
         messageSendingOperations.convertAndSend( //
                 TOPIC_GAME_PREFIX + gameId + TOPIC_GAME_PLAYERS_SUFFIX, //
                 new PlayerDTO().fromPlayer(player));
 
+        final Iterable<Player> players = persistenceRepo.findPlayer().findAllByGameId(gameId);
+
         final RegisterResponse response = new RegisterResponse() //
                 .teamsScore(gameData.getTeamsScore()) //
                 .ballAnimation(gameData.getBallAnimation()) //
                 .token(player.getToken());
-        gameData.getPlayers().forEach(response::addPlayer);
+        players.forEach(response::addPlayer);
 
         return response;
     }
 
     @Override
     public GameDataDTO startGame(String gameId, StartGameRequest request) {
+        final String playerId = retrieveFullPlayerId(gameId, request.getPlayerId());
         /* TODO
         Update the readyToStart property of the player and send the new Player
         to the front-end.
         Then, start the game if it can, or reset its ballAnimation to BALL_LOBBY_ANIMATION.
-        Finally return the new GameData
+        Finally return the new GameData.
+        NOTE: Keep in mind to persist the updates in the repository
          */
         GameData gameData = retrieveGameData(gameId, request.getToken());
-        String playerId = request.getPlayerId();
-        Player player = retrievePlayer(gameData,playerId, request.getToken());
-        if (player.isReadyToStart() && gameData.isPlaying())
-            return new GameDataDTO().teamsScore(gameData.getTeamsScore()).ballAnimation(gameData.getBallAnimation());
+        Player player = retrievePlayer(gameId, playerId, request.getToken());
         player.setReadyToStart(true);
+        persistenceRepo.updatePlayer(playerId).player(player).apply();
         messageSendingOperations.convertAndSend( //
                 TOPIC_GAME_PREFIX + gameId + TOPIC_GAME_PLAYERS_SUFFIX, //
                 new PlayerDTO().fromPlayer(player));
-        if (canGameStart(gameData)) {
-            new GameDataBroker().gameData(gameData).startGame();
-        }
-        else {
+        if (canGameStart(gameId)) {
+            new GameDataBroker() //
+                    .gameData(gameData) //
+                    .startGame();
+
+        } else {
             gameData.setBallAnimation(BALL_LOBBY_ANIMATION);
         }
+        persistenceRepo.updateGameData(gameId).gameData(gameData).apply();
         return new GameDataDTO() //
                 .teamsScore(gameData.getTeamsScore()) //
                 .ballAnimation(gameData.getBallAnimation());
@@ -107,22 +113,24 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
 
     @Override
     public PlayerDTO movePlayer(String gameId, MovePlayerRequest request) {
+        final String playerId = retrieveFullPlayerId(gameId, request.getPlayerId());
         /* TODO
-        Update the Y value of the player using PlayerBroker and return it
+        Update the Y value of the player using PlayerBroker and return it.
+        NOTE: Keep in mind to persist the updates in the repository
          */
-        GameData gameData = retrieveGameData(gameId, request.getToken());
-        String playerId = request.getPlayerId();
-        Player player = retrievePlayer(gameData,playerId, request.getToken());
+        Player player = retrievePlayer(gameId, playerId, request.getToken());
         PlayerBroker playerBroker = new PlayerBroker().player(player);
         playerBroker.moveToY(request.getY());
+        persistenceRepo.updatePlayer(playerId).player(player).apply();
         return new PlayerDTO().fromPlayer(player);
-
     }
 
     @Override
     public BallAnimation animationEnd(String gameId) {
         final GameData gameData = retrieveGameData(gameId, null);
+        final Iterable<Player> players = persistenceRepo.findPlayer().findAllByGameId(gameId);
         final GameDataBroker.UpdateAnimationResult updateAnimationResult = new GameDataBroker() //
+                .players(players) //
                 .gameData(gameData) //
                 .updateAnimation();
 
@@ -132,15 +140,19 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
             - Reset every player's readyToStart
             - Send to the front-end every new Player
             - Send to every player the message PointScored
+        NOTE: Keep in mind to persist the updates in the repository
          */
-        if (updateAnimationResult==GameDataBroker.UpdateAnimationResult.SCORE || updateAnimationResult==GameDataBroker.UpdateAnimationResult.NEXT) {
-            if (updateAnimationResult== GameDataBroker.UpdateAnimationResult.SCORE){
-                gameData.getPlayers().forEach(player -> player.setReadyToStart(false));
-                gameData.getPlayers().forEach(player -> messageSendingOperations.convertAndSend( //
-                        TOPIC_GAME_PREFIX + gameId + TOPIC_GAME_PLAYERS_SUFFIX, //
-                        new PlayerDTO().fromPlayer(player)));
-                gameData.getPlayers().forEach(player -> sendMessage(gameId, player.getToken(), Message.Type.INFO, Message.Code.POINT_SCORED));
-
+        if (updateAnimationResult == GameDataBroker.UpdateAnimationResult.SCORE || updateAnimationResult == GameDataBroker.UpdateAnimationResult.NEXT) {
+            persistenceRepo.updateGameData(gameId).gameData(gameData).apply();
+            if (updateAnimationResult == GameDataBroker.UpdateAnimationResult.SCORE) {
+                players.forEach(player -> {
+                    player.setReadyToStart(false);
+                    persistenceRepo.updatePlayer(player.getId()).player(player).apply();
+                    messageSendingOperations.convertAndSend( //
+                            TOPIC_GAME_PREFIX + gameId + TOPIC_GAME_PLAYERS_SUFFIX, //
+                            new PlayerDTO().fromPlayer(player));
+                    sendMessage(gameId, player.getToken(), Message.Type.INFO, Message.Code.POINT_SCORED);
+                });
             }
             return gameData.getBallAnimation();
         }
@@ -149,8 +161,12 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
 
     // Private
 
+    private String retrieveFullPlayerId(String gameId, String playerId) {
+        return playerId.concat(PLAYER_ID_SEPARATOR).concat(gameId);
+    }
+
     private GameData retrieveGameData(String gameId, String token) {
-        final GameData gameData = gameDataMap.getOrDefault(gameId, null);
+        final GameData gameData = persistenceRepo.findGameData().findById(gameId).orElse(null);
         if (gameData == null) {
             /* TODO
             Send a message to the player to notify the error
@@ -161,14 +177,8 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
         return gameData;
     }
 
-    private Player retrievePlayer(GameData gameData, String playerId, String token) {
-        Player player = null;
-        for (Player currPlayer : gameData.getPlayers()) {
-            if (currPlayer.getId().equals(playerId)) {
-                player = currPlayer;
-            }
-        }
-        final String gameId = gameData.getId();
+    private Player retrievePlayer(String gameId, String playerId, String token) {
+        final Player player = persistenceRepo.findPlayer().findById(playerId).orElse(null);
         if (player == null) {
             /* TODO
             Send a message to the player to notify the error
@@ -184,48 +194,48 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
             Send a message to the player to notify the error
              */
             sendMessage(gameId, token, Message.Type.ERROR, Message.Code.INVALID_PLAYER_TOKEN);
-
             throw new GameWebServerException(INVALID_PLAYER_TOKEN + playerId);
         }
         return player;
     }
 
-    private Player createPlayer(GameData gameData, String playerId) {
-        final boolean playerAlreadyExists = gameData.getPlayers() //
-                .stream() //
-                .anyMatch(player -> player.getId().equals(playerId));
+    private Player createPlayer(String gameId, String playerId) {
+        final String fullPlayerId = retrieveFullPlayerId(gameId, playerId);
+        final boolean playerAlreadyExists = persistenceRepo.findPlayer().findById(fullPlayerId).isPresent();
         if (playerAlreadyExists) {
             return null;
         }
 
         final String token = UUID.randomUUID().toString();
         /* TODO
-        Instantiate and return the new Player
+        Instantiate and return the new Player.
+        NOTE: Use fullPlayerId as id
          */
-        return new Player().id(playerId).y(PLAYFIELD_HEIGHT / 2).team(gameData.getPlayers().size() % 2 == 0 ? Player.Team.LEFT : Player.Team.RIGHT).token(token);
+        Iterable<Player> players = persistenceRepo.findPlayer().findAllByGameId(gameId);
+        Player player = new Player().token(token).id(fullPlayerId).gameId(gameId).y(PLAYFIELD_HEIGHT / 2).team(players.spliterator().estimateSize() % 2 == 0 ? Player.Team.LEFT : Player.Team.RIGHT);
+        return player;
     }
 
-    private boolean canGameStart(GameData gameData) {
+    private boolean canGameStart(String gameId) {
         /* TODO
         The game can start if:
             - All players are ready to start
             - There is at least one player for each team (side)
          */
-        boolean allReady = true;
         boolean leftTeam = false;
         boolean rightTeam = false;
-        for (Player player : gameData.getPlayers()) {
+        Iterable<Player> players = persistenceRepo.findPlayer().findAllByGameId(gameId);
+        for (Player player : players) {
             if (!player.isReadyToStart()) {
-                allReady = false;
+                return false;
             }
             if (player.getTeam() == Player.Team.LEFT) {
                 leftTeam = true;
-            }
-            if (player.getTeam() == Player.Team.RIGHT) {
+            } else {
                 rightTeam = true;
             }
         }
-        return allReady && leftTeam && rightTeam;
+        return leftTeam && rightTeam;
     }
 
     private void sendMessage(String gameId, String token, Message.Type type, Message.Code code) {
@@ -235,4 +245,5 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
         messageSendingOperations.convertAndSend( //
                 TOPIC_GAME_PREFIX + gameId + TOPIC_GAME_MESSAGES_SUFFIX + token, //
                 msg);
-    }}
+    }
+}

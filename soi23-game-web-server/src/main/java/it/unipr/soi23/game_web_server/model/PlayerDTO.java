@@ -1,5 +1,7 @@
 package it.unipr.soi23.game_web_server.model;
 
+import static it.unipr.soi23.game_web_server.utils.Soi23GameWebServerConst.PLAYER_ID_SEPARATOR;
+
 public class PlayerDTO {
 
     private String id;
@@ -60,7 +62,10 @@ public class PlayerDTO {
     }
 
     public PlayerDTO fromPlayer(Player player) {
-        setId(player.getId());
+        final int idSuffixLen = player.getGameId().length() + PLAYER_ID_SEPARATOR.length();
+        final String fullPlayerId = player.getId();
+        final String playerId = fullPlayerId.substring(0, fullPlayerId.length() - idSuffixLen);
+        setId(playerId);
         setReadyToStart(player.isReadyToStart());
         setTeam(player.getTeam());
         setY(player.getY());

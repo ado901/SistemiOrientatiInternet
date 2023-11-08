@@ -14,6 +14,8 @@ public class Soi23GameWebServerConst {
     public static final String PLAYER_ID_ALREADY_USED = "PlayerId already used: ";
     public static final String INVALID_PLAYER_TOKEN = "Invalid token for player: ";
 
+    public static final String PLAYER_ID_SEPARATOR = "@";
+
     public static final int PLAYFIELD_WIDTH = 1000;
     public static final int PLAYFIELD_HEIGHT = 750;
 

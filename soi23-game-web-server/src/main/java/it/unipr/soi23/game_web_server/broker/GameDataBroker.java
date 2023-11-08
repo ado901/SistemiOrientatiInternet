@@ -10,6 +10,7 @@ import static it.unipr.soi23.game_web_server.utils.Soi23GameWebServerConst.*;
 public class GameDataBroker {
 
     private GameData gameData;
+    private Iterable<Player> players;
 
     public enum UpdateAnimationResult {
         /**
@@ -28,6 +29,11 @@ public class GameDataBroker {
 
     public GameDataBroker gameData(GameData gameData) {
         this.gameData = gameData;
+        return this;
+    }
+
+    public GameDataBroker players(Iterable<Player> players) {
+        this.players = players;
         return this;
     }
 
@@ -53,7 +59,7 @@ public class GameDataBroker {
             if (ballAnimation.getEndTimestamp() <= System.currentTimeMillis()) {
                 final BallCollisionResult ballCollisionResult = new BallAnimationBroker() //
                         .ballAnimation(ballAnimation) //
-                        .collision(gameData.getPlayers());
+                        .collision(players);
                 if (ballCollisionResult == null) {
                     return UpdateAnimationResult.NEXT;
                 }

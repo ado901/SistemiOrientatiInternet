@@ -109,24 +109,32 @@ export default function usePlayField() {
         onMessageChange: handleMessageChange,
     })
 
+    function mapPlayerKey(key: string): {
+        direction: PlayerDirection
+    } | null {
+        switch (key) {
+            case 'w':
+                return {direction: PlayerDirection.Up }
+            case 's':
+                return { direction: PlayerDirection.Down }
+            default:
+                return null
+        }
+    }
     const handleKeyDown = useCallback(({ key }: KeyboardEvent) => {
         /* TODO
         Map the key so that you can:
             - set the moving direction of the player
             - request the start of the game
         */
-        switch (key) {
-            case 'w':
-                arenaRef.current.getPlayer()?.setDirection(PlayerDirection.Up)
-                break
-            case 's':
-                arenaRef.current.getPlayer()?.setDirection(PlayerDirection.Down)
-                break
-            case 'Enter':
-                sendStart(JSON.stringify({playerId,token}))
-                break
+        const mappedDir = mapPlayerKey(key)
+        if (mappedDir) {
+            arenaRef.current.getPlayer()?.setDirection(mappedDir.direction)
         }
-    }, [sendStart, playerId, token])
+        if (key === 'Enter') {
+            sendStart(JSON.stringify({playerId,token}))
+        }
+    }, [sendStart, arenaRef, playerId, token])
 
     const handleKeyUp = useCallback(({ key }: KeyboardEvent) => {
         /* TODO
@@ -135,17 +143,11 @@ export default function usePlayField() {
         Be aware that the user could have already pressed the key
         corresponding to the opposite player direction
         */
-        switch (key) {
-            case 'w':
-                if (arenaRef.current.getPlayer()?.getDirection() === PlayerDirection.Up) {
-                    arenaRef.current.getPlayer()?.setDirection(PlayerDirection.Hold)
-                }
-                break
-            case 's':
-                if (arenaRef.current.getPlayer()?.getDirection() === PlayerDirection.Down) {
-                    arenaRef.current.getPlayer()?.setDirection(PlayerDirection.Hold)
-                }
-                break
+        const mappedDir = mapPlayerKey(key)
+        if (mappedDir) {
+            if (mappedDir.direction === arenaRef.current.getPlayer()?.getDirection()) {
+                arenaRef.current.getPlayer()?.setDirection(PlayerDirection.Hold)
+            }
         }
     }, [])
 
