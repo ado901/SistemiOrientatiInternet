@@ -74,7 +74,7 @@ export default function useStompLogic({
     // REGISTER
 
     const registerDestination = useMemo(() => (
-        playerId && getDestination({ gameId, prefix: APP_PREFIX, suffix: `.player.${playerId}` })
+        playerId && getDestination({ gameId, prefix: APP_PREFIX, suffix: `.player.${playerId}.token.${localStorage.getItem('token')}`})
     ), [gameId, playerId])
 
     const handleRegisterMessage = useCallback(({ body }: { body: string }) => {
@@ -87,6 +87,7 @@ export default function useStompLogic({
         }
         if (registerMessage.token) {
             onTokenChange(registerMessage.token)
+            localStorage.setItem('token', registerMessage.token)
         }
         if (registerMessage.message) {
             onMessageChange(registerMessage.message)
@@ -176,7 +177,13 @@ export default function useStompLogic({
     const {
         send: sendStart
     } = useStompClient({ destination: startDestination })
-
+    //SEND TEAM
+    const teamDestination = useMemo(() => (
+        getDestination({ gameId, prefix: APP_PREFIX, suffix: '.team' })
+    ), [gameId])
+    const {
+        send: sendTeam
+    } = useStompClient({ destination: teamDestination })
     // SEND ANIMATION ENDED
 
     const animationEndedDestination = useMemo(() => (
@@ -197,9 +204,20 @@ export default function useStompLogic({
         send: sendPosition
     } = useStompClient({ destination: positionDestination })
 
+    // SEND SETTINGS
+    const settingsDestination = useMemo(() => (
+        getDestination({ gameId, prefix: APP_PREFIX, suffix: `.player.${playerId}.settings` })
+    ), [gameId, playerId])
+
+    const {
+        send: sendSettings
+    } = useStompClient({ destination: settingsDestination })
+
     return {
         sendStart,
+        sendSettings,
         sendAnimationEnded,
-        sendPosition
+        sendPosition,
+        sendTeam,
     }
 }

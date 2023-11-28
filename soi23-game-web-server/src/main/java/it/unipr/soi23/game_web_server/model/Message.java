@@ -22,7 +22,9 @@ public class Message {
         PLAYER_ID_ALREADY_USED, //
         INVALID_PLAYER_TOKEN, //
         // INFO
-        POINT_SCORED, //
+        POINT_SCORED,
+        NEW_PLAYER_JOINED,
+        GAME_STARTED//
     }
 
     private Type type;

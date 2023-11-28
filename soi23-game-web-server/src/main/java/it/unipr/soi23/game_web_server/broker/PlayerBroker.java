@@ -19,6 +19,17 @@ public class PlayerBroker {
         return this;
     }
 
+    public Player changeTeam(Player.Team team) {
+        player.setTeam(team);
+        player.setReadyToStart(false);
+        return player;
+    }
+    public Player changeSettings(int playerSpeed, int playerHeight) {
+        player.setPlayerheight(playerHeight);
+        player.setPlayerSpeed(playerSpeed);
+        return player;
+    }
+
     /**
      * Compares the provided token with the originally saved one
      *
@@ -45,7 +56,10 @@ public class PlayerBroker {
         - the distance between old and new y values is less or equal to elapsedFrames * PLAYER_STEP
          */
         double elapsedFrames= (nowTimestamp-player.getLastMovementTimestamp())/MS_PER_FRAME;
-        if(y>=PLAYER_MIN_Y && y<=PLAYER_MAX_Y && Math.abs(y-player.getY())<=PLAYER_STEP*elapsedFrames) {
+        System.out.println("PLAYER BROKER");
+        System.out.println(player.getPlayerSpeed());
+        System.out.println(player.getPlayerHeight());
+        if(y>=player.getMiny() && y<=player.getMaxy() && Math.abs(y-player.getY())<=player.getPlayerstep()*elapsedFrames) {
             player.setY(y);
             player.setLastMovementTimestamp(nowTimestamp);
         }

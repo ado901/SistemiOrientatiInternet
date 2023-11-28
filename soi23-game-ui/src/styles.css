@@ -5,3 +5,7 @@
         cy: var(--ball-end-y);
     }
 }
+
+:root {
+    background-color:rgb(17, 17, 17)
+}

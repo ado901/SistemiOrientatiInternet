@@ -33,7 +33,7 @@ export const PLAYFIELD_SVG_HEIGHT = '75vmin'
 
 export const PLAYFIELD_STYLE: CSSProperties = Object.freeze({
     position: 'relative',
-    backgroundColor: '#E0E0E0'
+    backgroundColor: '#292828'
 })
 
 export const PLAYFIELD_TEXT_STYLE: CSSProperties = Object.freeze({
@@ -41,6 +41,7 @@ export const PLAYFIELD_TEXT_STYLE: CSSProperties = Object.freeze({
     transform: 'translate(-50%, -50%)',
     top: '50%',
     left: '50%',
+    color: '#FFFFFF',
 })
 
 // BALL STYLE
@@ -58,10 +59,10 @@ export const PLAYER_BASE_SVG_PROPS: React.SVGProps<SVGRectElement> = Object.free
     height: PLAYER_HEIGHT,
 })
 export const PLAYER_READY_SVG_PROPS: React.SVGProps<SVGRectElement> = Object.freeze({
-    fill: '#7C4DFF',
+    fill: '#5c081d',
 })
 export const PLAYER_NOT_READY_SVG_PROPS: React.SVGProps<SVGRectElement> = Object.freeze({
-    fill: '#F7D302',
+    fill: '#085c47',
 })
 
 export const PLAYER_TEXT_BASE_STYLE: CSSProperties = Object.freeze({

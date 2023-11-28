@@ -8,6 +8,30 @@ public class PlayerDTO {
     private boolean readyToStart;
     private Player.Team team;
     private int y;
+    private int playerHeight;
+    public int getPlayerHeight() {
+        return playerHeight;
+    }
+    private double playerSpeed;
+
+    public double getPlayerSpeed() {
+        return playerSpeed;
+    }
+    public void setPlayerSpeed(double playerSpeed) {
+        this.playerSpeed = playerSpeed;
+    }
+    public PlayerDTO playerSpeed(double playerSpeed) {
+        setPlayerSpeed(playerSpeed);
+        return this;
+    }
+
+    public void setPlayerHeight(int playerHeight) {
+        this.playerHeight = playerHeight;
+    }
+    public PlayerDTO playerHeight(int playerHeight) {
+        setPlayerHeight(playerHeight);
+        return this;
+    }
 
     public String getId() {
         return id;
@@ -69,6 +93,8 @@ public class PlayerDTO {
         setReadyToStart(player.isReadyToStart());
         setTeam(player.getTeam());
         setY(player.getY());
+        setPlayerHeight(player.getPlayerHeight());
+        setPlayerSpeed(player.getPlayerSpeed());
         return this;
     }
 }

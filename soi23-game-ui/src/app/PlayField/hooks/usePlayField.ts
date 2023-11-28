@@ -1,4 +1,4 @@
-import {
+import React, {
     ChangeEvent,
     KeyboardEvent,
     useCallback,
@@ -15,7 +15,7 @@ import {
     TeamsScore,
 } from '../../utils/interfaces'
 import {
-    BALL_BASE_SVG_PROPS,
+    BALL_BASE_SVG_PROPS, PLAYER_HEIGHT, PLAYER_SPEED
 } from '../../utils/const'
 import Arena from '../../utils/Arena'
 import useSubmit from './useSubmit'
@@ -25,9 +25,14 @@ import useMessageHandler from './useMessageHandler'
 interface BallProps extends React.SVGProps<SVGCircleElement> {
     style: React.CSSProperties,
 }
+interface LineProps extends React.SVGProps<SVGLineElement> {
+    style: React.CSSProperties,
+}
 
 export default function usePlayField() {
     const [pendingGameId, setPendingGameId] = useState<string>('')
+    const [pendingPlayerSpeed, setPlayerSpeed] = useState<number>(PLAYER_SPEED)
+    const [pendingPlayerHeight, setPendingPlayerHeight] = useState<number>(PLAYER_HEIGHT)
     const [pendingPlayerId, setPendingPlayerId] = useState<string>('')
     const [token, setToken] = useState<string>('')
     const [teamsScore, setTeamsScore] = useState<TeamsScore | null>(null)
@@ -39,8 +44,8 @@ export default function usePlayField() {
     const ballProps: BallProps = useMemo(() => {
         const customStyle: React.CSSProperties = {}
         if (ballAnimation !== null) {
-            document.documentElement.style.setProperty('--ball-end-y', `${ballAnimation.endY}`)
-            document.documentElement.style.setProperty('--ball-end-x', `${ballAnimation.endX}`)
+            document.documentElement.style.setProperty('--ball-end-y', `${ballAnimation.endY}px`)
+            document.documentElement.style.setProperty('--ball-end-x', `${ballAnimation.endX}px`)
             customStyle.animationName = 'ballAnimation'
             customStyle.animationTimingFunction = 'linear'
             customStyle.animationFillMode = 'forwards'
@@ -56,6 +61,17 @@ export default function usePlayField() {
         }
     }, [ballAnimation])
 
+    const lineProps: LineProps = useMemo(() => {
+        const customStyle1: React.CSSProperties = {}
+        return {
+            style: customStyle1,
+            x1: ballAnimation?.startX,
+            y1: ballAnimation?.startY,
+            x2: ballAnimation?.endX,
+            y2: ballAnimation?.endY,
+            stroke: 'white',
+        }
+    }, [ballAnimation])
     const {
         gameId,
         playerId,
@@ -80,11 +96,14 @@ export default function usePlayField() {
 
     const handlePlayerDTOChange = useCallback((playerDTO: PlayerDTO) => {
         if (playerId === playerDTO.id) {
-            arenaRef.current.setPlayerPosition({ team: playerDTO.team, y: playerDTO.y })
+            arenaRef.current.setPlayerPosition({ team: playerDTO.team, y: playerDTO.y})
+            arenaRef.current.getPlayer()?.setPlayerHeight(playerDTO.playerHeight)
+            arenaRef.current.getPlayer()?.setPlayerSpeed(playerDTO.playerSpeed)
         }
         /* TODO
         Set the new value of playerDTOMap
         */
+        console.log('handlePlayerDTOChange '+ JSON.stringify(playerDTO))
         setPlayerDTOMap((oldPlayerDTOMap) => ({
             ...oldPlayerDTOMap,
             [playerDTO.id]: playerDTO,
@@ -94,10 +113,19 @@ export default function usePlayField() {
         handleMessageChange
     } = useMessageHandler()
 
+    const handleChangeSpeed = useCallback((event: Event, value: number | number[], activeThumb: number) => {
+        setPlayerSpeed(value as number)
+    }, [])
+    const handleChangeHeight = useCallback((event: Event, value: number | number[], activeThumb: number) => {
+        setPendingPlayerHeight(value as number)
+    }, [])
+
     const {
         sendStart,
         sendAnimationEnded,
-        sendPosition
+        sendPosition,
+        sendTeam,
+        sendSettings,
     } = useStompLogic({
         gameId,
         playerId,
@@ -121,6 +149,14 @@ export default function usePlayField() {
                 return null
         }
     }
+    const handleSendSettings = useCallback(() => {
+        /* TODO
+        Send the settings to the backend
+        */
+        console.log('sendSettings '+ JSON.stringify({ 'playerSpeed': pendingPlayerSpeed, 'playerSize': pendingPlayerHeight,token}))
+        sendSettings(JSON.stringify({ 'playerSpeed': pendingPlayerSpeed, 'playerSize': pendingPlayerHeight,token}))
+
+    }, [sendSettings, pendingPlayerSpeed, pendingPlayerHeight, token])
     const handleKeyDown = useCallback(({ key }: KeyboardEvent) => {
         /* TODO
         Map the key so that you can:
@@ -136,6 +172,10 @@ export default function usePlayField() {
         }
     }, [sendStart, arenaRef, playerId, token])
 
+    const handleTeamChange = useCallback((newvalue:string|null) => {
+        // imposto il team scelto del giocatore
+        sendTeam(JSON.stringify({playerId, 'team': newvalue==='left'?0:1,token}))
+    }, [playerId, sendTeam, token])
     const handleKeyUp = useCallback(({ key }: KeyboardEvent) => {
         /* TODO
         Map the key so that you can reset the moving direction
@@ -190,5 +230,10 @@ export default function usePlayField() {
         handleGameIdChange,
         handlePlayerIdChange,
         handleButtonClick,
+        handleTeamChange,
+        handleSendSettings,
+        handleChangeSpeed,
+        handleChangeHeight,
+        lineProps,
     }
 }

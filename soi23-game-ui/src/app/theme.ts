@@ -3,10 +3,10 @@ import {
 } from '@mui/joy'
 
 const theme = extendTheme({
-    'colorSchemes': {
-        'light': {
-            'palette': {
-                'primary': {
+    colorSchemes: {
+        light: {
+            palette: {
+                primary: {
                     '50': '#fff7ed',
                     '100': '#ffedd5',
                     '200': '#fed7aa',
@@ -18,7 +18,7 @@ const theme = extendTheme({
                     '800': '#9a3412',
                     '900': '#7c2d12'
                 },
-                'warning': {
+                warning: {
                     '50': '#fefce8',
                     '100': '#fef9c3',
                     '200': '#fef08a',
@@ -32,31 +32,31 @@ const theme = extendTheme({
                 }
             }
         },
-        'dark': {
-            'palette': {
-                'primary': {
-                    '50': '#fff7ed',
-                    '100': '#ffedd5',
-                    '200': '#fed7aa',
-                    '300': '#fdba74',
-                    '400': '#fb923c',
-                    '500': '#f97316',
-                    '600': '#ea580c',
-                    '700': '#c2410c',
-                    '800': '#9a3412',
-                    '900': '#7c2d12'
+        dark: {
+            palette: {
+                primary: {
+                    '50': '#2C1320',
+                    '100': '#2C1320',
+                    '200': '#2C1320',
+                    '300': '#2C1320',
+                    '400': '#5F4B66',
+                    '500': '#A7ADC6',
+                    '600': '#8797AF',
+                    '700': '#8797AF',
+                    '800': '#8797AF',
+                    '900': '#56667A'
                 },
-                'warning': {
-                    '50': '#fefce8',
-                    '100': '#fef9c3',
-                    '200': '#fef08a',
-                    '300': '#fde047',
-                    '400': '#facc15',
-                    '500': '#eab308',
-                    '600': '#ca8a04',
-                    '700': '#a16207',
-                    '800': '#854d0e',
-                    '900': '#713f12'
+                warning: {
+                    '50': '#713f12',
+                    '100': '#854d0e',
+                    '200': '#a16207',
+                    '300': '#ca8a04',
+                    '400': '#eab308',
+                    '500': '#facc15',
+                    '600': '#fde047',
+                    '700': '#fef08a',
+                    '800': '#fef9c3',
+                    '900': '#fefce8'
                 }
             }
         }

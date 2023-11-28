@@ -9,6 +9,7 @@ public class Soi23GameWebServerProperties {
 
     private String adminName;
     private String adminPassword;
+    private String stompBrokerRelayHost;
 
     public String getAdminName() {
         return adminName;
@@ -24,5 +25,13 @@ public class Soi23GameWebServerProperties {
 
     public void setAdminPassword(String adminPassword) {
         this.adminPassword = adminPassword;
+    }
+
+    public String getStompBrokerRelayHost() {
+        return stompBrokerRelayHost;
+    }
+
+    public void setStompBrokerRelayHost(String stompBrokerRelayHost) {
+        this.stompBrokerRelayHost = stompBrokerRelayHost;
     }
 }

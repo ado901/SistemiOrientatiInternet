@@ -8,7 +8,8 @@ public class Soi23GameWebServerConst {
     public static final String TOPIC_GAME_PREFIX = "/topic/game.";
     public static final String TOPIC_GAME_PLAYERS_SUFFIX = ".players";
     public static final String TOPIC_GAME_MESSAGES_SUFFIX = ".messages.";
-
+    public static final String TOPIC_TOKEN_SUFFIX = ".token";
+    public static final String TOPIC_GAME_SCORE_SUFFIX = ".score";
     public static final String GAME_NOT_FOUND = "GameId not found: ";
     public static final String PLAYER_NOT_FOUND = "Player not found: ";
     public static final String PLAYER_ID_ALREADY_USED = "PlayerId already used: ";

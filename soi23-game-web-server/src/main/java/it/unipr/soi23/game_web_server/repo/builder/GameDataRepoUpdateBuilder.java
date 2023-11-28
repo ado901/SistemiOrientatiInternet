@@ -2,6 +2,7 @@ package it.unipr.soi23.game_web_server.repo.builder;
 
 import it.unipr.soi23.game_web_server.model.BallAnimation;
 import it.unipr.soi23.game_web_server.model.GameData;
+import it.unipr.soi23.game_web_server.model.GameSettings;
 import it.unipr.soi23.game_web_server.model.TeamsScore;
 
 public interface GameDataRepoUpdateBuilder {
@@ -13,6 +14,7 @@ public interface GameDataRepoUpdateBuilder {
     public GameDataRepoUpdateBuilder teamsScore(TeamsScore teamsScore);
 
     public GameDataRepoUpdateBuilder ballAnimation(BallAnimation ballAnimation);
+    public GameDataRepoUpdateBuilder gameSettings(GameSettings gameSettings);
 
     public void apply();
 }

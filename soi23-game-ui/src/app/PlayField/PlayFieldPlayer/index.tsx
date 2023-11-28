@@ -3,8 +3,6 @@ import { enqueueSnackbar } from 'notistack'
 import { Typography } from '@mui/joy'
 import {
     LEFT_TEAM_X,
-    PLAYER_BASE_SVG_PROPS,
-    PLAYER_HEIGHT,
     PLAYER_NOT_READY_SVG_PROPS,
     PLAYER_READY_SVG_PROPS,
     PLAYER_TEXT_BASE_STYLE,
@@ -27,9 +25,15 @@ export default function PlayFieldPlayer({
     const {
         team,
         y: posY,
-        readyToStart
+        readyToStart,
+        playerHeight,
+        playerradius,
     } = player
-
+    const svgprops: React.SVGProps<SVGRectElement> = useMemo(() => ({
+        rx: playerradius,
+        width: PLAYER_WIDTH,
+        height: playerHeight,
+    }), [playerHeight, playerradius])
     const isUser = useMemo(() => (
         userId === playerId
     ), [userId, playerId])
@@ -47,22 +51,24 @@ export default function PlayFieldPlayer({
             : PLAYER_NOT_READY_SVG_PROPS
 
         return {
-            ...PLAYER_BASE_SVG_PROPS,
+            ...svgprops,
             ...extraProps,
             x: posX - PLAYER_WIDTH / 2,
-            y: posY - PLAYER_HEIGHT / 2,
+            y: posY - playerHeight / 2,
         }
-    }, [team, posY, readyToStart])
+    }, [team, posY, readyToStart, playerHeight, svgprops])
 
     const textSvgProps: React.SVGProps<SVGForeignObjectElement> = useMemo(() => ({
         x: team === PlayerTeam.LEFT
-            ? LEFT_TEAM_X - 2 * PLAYER_WIDTH
-            : RIGHT_TEAM_X + 2 * PLAYER_WIDTH,
+            ? LEFT_TEAM_X - 5 * PLAYER_WIDTH
+            : RIGHT_TEAM_X + 1 * PLAYER_WIDTH,
         textAnchor: team === PlayerTeam.LEFT
             ? 'end'
             : 'start',
-        overflow: 'visible'
-    }), [team])
+        overflow: 'visible',
+        width: svgprops.width,
+        height: svgprops.height,
+    }), [team, svgprops	])
 
     const textStyle: React.CSSProperties = useMemo(() => {
         const sideStyle = team === PlayerTeam.LEFT

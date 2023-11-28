@@ -35,6 +35,12 @@ function mapCode(code: string) {
         case 'POINT_SCORED':
             output = 'Point!'
             break
+        case 'GAME_STARTED':
+            output = 'Game started'
+            break
+        case 'NEW_PLAYER_JOINED':
+            output = 'New player joined'
+            break
         default:
             output = code
     }

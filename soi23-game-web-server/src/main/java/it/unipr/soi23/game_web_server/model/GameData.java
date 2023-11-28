@@ -26,8 +26,22 @@ public class GameData implements Serializable {
         this.isPlaying = false;
         this.teamsScore = new TeamsScore();
         this.ballAnimation = BALL_LOBBY_ANIMATION;
+        this.gameSettings = new GameSettings();
     }
 
+    public GameSettings getGameSettings() {
+        return gameSettings;
+    }
+
+    public void setGameSettings(GameSettings gameSettings) {
+        this.gameSettings = gameSettings;
+    }
+    public GameData gameSettings(GameSettings gameSettings) {
+        this.gameSettings = gameSettings;
+        return this;
+    }
+
+    private GameSettings gameSettings;
     public String getId() {
         return id;
     }

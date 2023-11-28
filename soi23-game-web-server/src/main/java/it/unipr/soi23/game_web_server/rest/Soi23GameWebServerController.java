@@ -23,9 +23,9 @@ public class Soi23GameWebServerController {
         return service.watchGame(gameId);
     }
 
-    @SubscribeMapping("game.{gameId}.player.{playerId}")
-    public RegisterResponse register(@DestinationVariable String gameId, @DestinationVariable String playerId) {
-        return service.register(gameId, playerId);
+    @SubscribeMapping("game.{gameId}.player.{playerId}.token.{token}")
+    public RegisterResponse register(@DestinationVariable String gameId, @DestinationVariable String playerId, @DestinationVariable String token) {
+        return service.register(gameId, playerId, token);
     }
 
     @MessageMapping("game.{gameId}.start")
@@ -45,4 +45,17 @@ public class Soi23GameWebServerController {
     public BallAnimation animationEnd(@DestinationVariable String gameId) {
         return service.animationEnd(gameId);
     }
+
+    @MessageMapping("game.{gameId}.team")
+    @SendTo(Soi23GameWebServerConst.TOPIC_GAME_PREFIX + "{gameId}.team")
+    public GameDataDTO changeTeam(@DestinationVariable String gameId, ChangeTeamRequest request) {
+        return service.changeTeam(gameId, request);
+    }
+
+    @MessageMapping("game.{gameId}.player.{playerId}.settings")
+    @SendTo(Soi23GameWebServerConst.TOPIC_GAME_PREFIX + "{gameId}.player.{playerId}.settings")
+    public GameDataDTO changeSettings(@DestinationVariable String gameId, @DestinationVariable String playerId, ChangeSettingsRequest request) {
+        return service.changeSettings(gameId, playerId, request);
+    }
+
 }

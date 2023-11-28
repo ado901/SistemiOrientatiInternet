@@ -6,11 +6,14 @@ public interface Soi23GameWebServerService {
 
     WatchGameResponse watchGame(String gameId);
 
-    RegisterResponse register(String gameId, String playerId);
+    RegisterResponse register(String gameId, String playerId, String token);
 
     GameDataDTO startGame(String gameId, StartGameRequest request);
 
     PlayerDTO movePlayer(String gameId, MovePlayerRequest request);
 
     BallAnimation animationEnd(String gameId);
+    GameDataDTO changeTeam(String gameId, ChangeTeamRequest request);
+
+    GameDataDTO changeSettings(String gameId, String playerId, ChangeSettingsRequest request);
 }

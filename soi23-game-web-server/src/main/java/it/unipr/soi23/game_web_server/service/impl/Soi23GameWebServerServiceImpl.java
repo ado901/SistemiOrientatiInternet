@@ -45,12 +45,28 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
     }
 
     @Override
-    public RegisterResponse register(String gameId, String playerId) {
+    public RegisterResponse register(String gameId, String playerId, String token) {
         final GameData gameDataRead = persistenceRepo.findGameData().findById(gameId).orElse(null);
         final boolean gameDataFound = gameDataRead != null;
         final GameData gameData = gameDataFound ? gameDataRead : new GameData(gameId);
+        final String fullPlayerId = retrieveFullPlayerId(gameId, playerId);
+        final Player playerRead = persistenceRepo.findPlayer().findById(fullPlayerId).orElse(null);
+        if ((!token.equals("null")) && playerRead!=null){
+            final boolean isValidToken = new PlayerBroker() //
+                    .player(playerRead) //
+                    .checkPlayerToken(token);
+            if (playerRead.getGameId().equals(gameId) && isValidToken && playerRead!=null){
+                messageSendingOperations.convertAndSend( //
+                        TOPIC_GAME_PREFIX + gameId + TOPIC_GAME_PLAYERS_SUFFIX, //
+                        new PlayerDTO().fromPlayer(playerRead));
+                return new RegisterResponse() //
+                        .teamsScore(gameData.getTeamsScore()) //
+                        .ballAnimation(gameData.getBallAnimation()) //
+                        .token(token);
 
-        final Player player = createPlayer(gameId, playerId);
+            }
+        }
+        final Player player = createPlayer(gameId, playerId, gameData);
         if (player == null) {
             return new RegisterResponse().message(new Message() //
                     .type(Message.Type.ERROR) //
@@ -60,17 +76,19 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
         if (gameData.isPlaying()) {
             player.setReadyToStart(true);
         }
-        persistenceRepo.insertPlayer().player(player).apply();
+        final Iterable<Player> players = persistenceRepo.findPlayer().findAllByGameId(gameId);
+        players.forEach(p -> {
+            if (!p.getId().equals(player.getId())) {
+                sendMessage(gameId, p.getToken(), Message.Type.INFO, Message.Code.NEW_PLAYER_JOINED);
+            }
+        });
+
         if (!gameDataFound) {
             persistenceRepo.insertGameData().gameData(gameData).apply();
         }
-
         messageSendingOperations.convertAndSend( //
                 TOPIC_GAME_PREFIX + gameId + TOPIC_GAME_PLAYERS_SUFFIX, //
                 new PlayerDTO().fromPlayer(player));
-
-        final Iterable<Player> players = persistenceRepo.findPlayer().findAllByGameId(gameId);
-
         final RegisterResponse response = new RegisterResponse() //
                 .teamsScore(gameData.getTeamsScore()) //
                 .ballAnimation(gameData.getBallAnimation()) //
@@ -101,7 +119,8 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
             new GameDataBroker() //
                     .gameData(gameData) //
                     .startGame();
-
+            persistenceRepo.findPlayer().findAllByGameId(gameId).forEach(p ->
+                sendMessage(gameId, p.getToken(), Message.Type.INFO, Message.Code.GAME_STARTED));
         } else {
             gameData.setBallAnimation(BALL_LOBBY_ANIMATION);
         }
@@ -119,8 +138,10 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
         NOTE: Keep in mind to persist the updates in the repository
          */
         Player player = retrievePlayer(gameId, playerId, request.getToken());
-        PlayerBroker playerBroker = new PlayerBroker().player(player);
-        playerBroker.moveToY(request.getY());
+        System.out.println("SERVICE");
+        System.out.println(player.getPlayerSpeed());
+        System.out.println(player.getPlayerSpeed());
+        new PlayerBroker().player(player).moveToY(request.getY());
         persistenceRepo.updatePlayer(playerId).player(player).apply();
         return new PlayerDTO().fromPlayer(player);
     }
@@ -153,6 +174,9 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
                             new PlayerDTO().fromPlayer(player));
                     sendMessage(gameId, player.getToken(), Message.Type.INFO, Message.Code.POINT_SCORED);
                 });
+                messageSendingOperations.convertAndSend( //
+                        TOPIC_GAME_PREFIX + gameId + TOPIC_GAME_SCORE_SUFFIX, //
+                        gameData.getTeamsScore());
             }
             return gameData.getBallAnimation();
         }
@@ -176,9 +200,42 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
         }
         return gameData;
     }
+    private void changeTeamHeight(Player.Team team, String gameId, GameData gameData){
+        Iterable<Player> players = persistenceRepo.findPlayer().findAllByGameId(gameId);
+        int counter;
+        if (team == Player.Team.LEFT)
+            counter = gameData.getGameSettings().getLeftCount();
+        else
+            counter = gameData.getGameSettings().getRightCount();
+        if (counter<=0){
+            return;
+        }
+        else if (counter>4){
+            counter=4;
+        }
+        int value = PLAYER_HEIGHT/counter;
+        if (team == Player.Team.LEFT)
+            gameData.getGameSettings().setLeftHeight(value);
+        else
+            gameData.getGameSettings().setRightHeight(value);
+        persistenceRepo.updateGameData(gameId).gameData(gameData).apply();
+        players.forEach(player -> {
+            if (player.getTeam() == team) {
+            player.setPlayerheight(value);
+            persistenceRepo.updatePlayer(player.getId()).player(player).apply();
+            messageSendingOperations.convertAndSend( //
+                    TOPIC_GAME_PREFIX + gameId + TOPIC_GAME_PLAYERS_SUFFIX, //
+                    new PlayerDTO().fromPlayer(player));
+        }});
+
+
+    }
 
     private Player retrievePlayer(String gameId, String playerId, String token) {
         final Player player = persistenceRepo.findPlayer().findById(playerId).orElse(null);
+        System.out.println("RETRIEVE PLAYER 1");
+        System.out.println(player.getPlayerSpeed());
+        System.out.println(player.getPlayerHeight());
         if (player == null) {
             /* TODO
             Send a message to the player to notify the error
@@ -199,7 +256,7 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
         return player;
     }
 
-    private Player createPlayer(String gameId, String playerId) {
+    private Player createPlayer(String gameId, String playerId, GameData gameData) {
         final String fullPlayerId = retrieveFullPlayerId(gameId, playerId);
         final boolean playerAlreadyExists = persistenceRepo.findPlayer().findById(fullPlayerId).isPresent();
         if (playerAlreadyExists) {
@@ -212,7 +269,17 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
         NOTE: Use fullPlayerId as id
          */
         Iterable<Player> players = persistenceRepo.findPlayer().findAllByGameId(gameId);
-        Player player = new Player().token(token).id(fullPlayerId).gameId(gameId).y(PLAYFIELD_HEIGHT / 2).team(players.spliterator().estimateSize() % 2 == 0 ? Player.Team.LEFT : Player.Team.RIGHT);
+        Player.Team choice;
+        if (players.spliterator().estimateSize() % 2 == 0) {
+            gameData.getGameSettings().setLeftCount(gameData.getGameSettings().getLeftCount() + 1);
+            choice = Player.Team.LEFT;
+        } else {
+            gameData.getGameSettings().setRightCount(gameData.getGameSettings().getRightCount() + 1);
+            choice = Player.Team.RIGHT;
+        }
+        Player player = new Player().token(token).id(fullPlayerId).gameId(gameId).y(PLAYFIELD_HEIGHT / 2).team(choice);
+        persistenceRepo.insertPlayer().player(player).apply();
+        changeTeamHeight(choice, gameId, gameData);
         return player;
     }
 
@@ -245,5 +312,53 @@ public class Soi23GameWebServerServiceImpl implements Soi23GameWebServerService 
         messageSendingOperations.convertAndSend( //
                 TOPIC_GAME_PREFIX + gameId + TOPIC_GAME_MESSAGES_SUFFIX + token, //
                 msg);
+    }
+    public GameDataDTO changeTeam(String gameId, ChangeTeamRequest request) {
+        /**
+         * 1. controlla se la richiesta è valida e che la squadra scelta non sia quella attuale.
+         * 2. poi cambia la squadra e aggiorna il counter per la size dei player per squadra
+         * 3. aggiorna l'altezza dei player per squadra
+         */
+        final String playerId = retrieveFullPlayerId(gameId, request.getPlayerId());
+        GameData gameData = retrieveGameData(gameId, request.getToken());
+        Player player = retrievePlayer(gameId, playerId, request.getToken());
+        Player.Team team = player.getTeam();
+        if (request.getTeam()==team.ordinal())
+            return new GameDataDTO() //
+                    .teamsScore(gameData.getTeamsScore()) //
+                    .ballAnimation(gameData.getBallAnimation());
+        else if (request.getTeam() == 0 && team == Player.Team.RIGHT) {
+            gameData.getGameSettings().setLeftCount(gameData.getGameSettings().getLeftCount() + 1);
+            gameData.getGameSettings().setRightCount(gameData.getGameSettings().getRightCount() - 1);
+            team = Player.Team.LEFT;
+
+        } else if (request.getTeam()==1 && team == Player.Team.LEFT) {
+            gameData.getGameSettings().setLeftCount(gameData.getGameSettings().getLeftCount() - 1);
+            gameData.getGameSettings().setRightCount(gameData.getGameSettings().getRightCount() + 1);
+            team = Player.Team.RIGHT;
+        }
+        Player.Team oldTeam = player.getTeam();
+        new PlayerBroker().player(player).changeTeam(team);
+        persistenceRepo.updatePlayer(playerId).player(player).apply();
+        changeTeamHeight(team, gameId, gameData);
+        changeTeamHeight(oldTeam, gameId, gameData);
+
+        return new GameDataDTO() //
+                .teamsScore(gameData.getTeamsScore()) //
+                .ballAnimation(gameData.getBallAnimation());
+    }
+
+    public GameDataDTO changeSettings(String gameid, String playerid, ChangeSettingsRequest request){
+        final String playerId = retrieveFullPlayerId(gameid, playerid);
+        Player player = retrievePlayer(gameid, playerId, request.getToken());
+        GameData gameData = retrieveGameData(gameid, request.getToken());
+        new PlayerBroker().player(player).changeSettings(request.getPlayerSpeed(), request.getPlayerSize());
+        messageSendingOperations.convertAndSend( //
+                TOPIC_GAME_PREFIX + gameid + TOPIC_GAME_PLAYERS_SUFFIX, //
+                new PlayerDTO().fromPlayer(player));
+        persistenceRepo.updatePlayer(playerId).player(player).apply();
+        return new GameDataDTO() //
+                .teamsScore(gameData.getTeamsScore()) //
+                .ballAnimation(gameData.getBallAnimation());
     }
 }

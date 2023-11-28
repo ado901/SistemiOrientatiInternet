@@ -12,6 +12,14 @@ export interface BallAnimation {
     time: number,
 }
 
+export interface LineAnimation {
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    time: number,
+}
+
 export enum PlayerTeam {
     LEFT,
     RIGHT
@@ -31,6 +39,12 @@ export enum PlayerDirection {
 export interface PlayerDTO extends PlayerPosition {
     id: string,
     readyToStart: boolean,
+    playerHeight: number,
+    playerSpeed: number,
+    playerradius: number
+    rx: number,
+    width: number,
+    height: number,
 }
 
 export type PlayerDTOMap = Record<string, PlayerDTO>

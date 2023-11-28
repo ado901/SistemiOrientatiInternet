@@ -14,5 +14,7 @@ public interface PlayerRepoUpdateBuilder {
 
     public PlayerRepoUpdateBuilder lastMovementTimestamp(long lastMovementTimestamp);
 
+    public PlayerRepoUpdateBuilder playerSettings(Player player);
+
     public void apply();
 }

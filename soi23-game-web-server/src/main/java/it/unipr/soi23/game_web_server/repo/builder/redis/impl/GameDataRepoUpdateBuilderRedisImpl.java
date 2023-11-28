@@ -1,5 +1,6 @@
 package it.unipr.soi23.game_web_server.repo.builder.redis.impl;
 
+import it.unipr.soi23.game_web_server.model.GameSettings;
 import org.springframework.data.redis.core.PartialUpdate;
 import org.springframework.data.redis.core.RedisKeyValueTemplate;
 
@@ -13,6 +14,8 @@ public class GameDataRepoUpdateBuilderRedisImpl implements GameDataRepoUpdateBui
     private static final String IS_PLAYING = "isPlaying";
     private static final String TEAMS_SCORE = "teamsScore";
     private static final String BALL_ANIMATION = "ballAnimation";
+    private static final String RIGHTCOUNTER = "rightcounter";
+    private static final String LEFTCOUNTER = "leftcounter";
 
     private final RedisKeyValueTemplate redisKVTemplate;
 
@@ -28,6 +31,7 @@ public class GameDataRepoUpdateBuilderRedisImpl implements GameDataRepoUpdateBui
         isPlaying(gameData.isPlaying());
         teamsScore(gameData.getTeamsScore());
         ballAnimation(gameData.getBallAnimation());
+        gameSettings(gameData.getGameSettings());
         return this;
     }
 
@@ -46,6 +50,12 @@ public class GameDataRepoUpdateBuilderRedisImpl implements GameDataRepoUpdateBui
     @Override
     public GameDataRepoUpdateBuilderRedisImpl ballAnimation(BallAnimation ballAnimation) {
         partialUpdate = partialUpdate.set(BALL_ANIMATION, ballAnimation);
+        return this;
+    }
+
+    @Override
+    public GameDataRepoUpdateBuilderRedisImpl gameSettings(GameSettings gameSettings) {
+        partialUpdate = partialUpdate.set("gameSettings", gameSettings);
         return this;
     }
 
